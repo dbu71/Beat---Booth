@@ -63,7 +63,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .app{max-width:480px;margin:0 auto;display:grid;gap:10px}
 
-.head{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px}
+.head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px}
+.tag{grid-column:1/-1}
+.pills{display:flex;gap:8px}
+.pill{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--accent);background:transparent;color:var(--ink);font-size:13px;font-weight:700;white-space:nowrap}
+.pill.solid{background:var(--accent);color:var(--on)}
 .brand{margin:0;font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:.03em;text-transform:uppercase;color:var(--accent)}
 .tag{margin:0;font-size:12px;color:var(--dim)}
 
@@ -158,6 +162,40 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);background:var(--surface)}
 .foot{margin:2px 0 0;font-size:11.5px;line-height:1.45;color:var(--dim)}
 
+input,textarea{
+  width:100%;min-width:0;padding:10px 12px;
+  font:inherit;font-size:16px;color:var(--ink);background:var(--bg);
+  border:2px solid var(--line);border-radius:12px;
+  -webkit-user-select:text;user-select:text;
+}
+textarea{resize:none}
+input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.scrim{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,5,20,.62)}
+.sheet{
+  width:100%;max-width:480px;max-height:90vh;overflow:auto;
+  display:grid;gap:12px;align-content:start;
+  background:var(--surface);border:2px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;
+  padding:16px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.sheethead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sheethead h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:20px;letter-spacing:.03em;text-transform:uppercase;color:var(--accent)}
+.x{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:2px solid var(--line);background:transparent}
+.x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.saverow{display:flex;gap:8px;align-items:center}
+.saverow .pill{flex:none}
+.msg{margin:0;min-height:18px;font-size:13px;line-height:1.35;color:var(--ink)}
+.beats{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.beat{display:grid;gap:8px;padding:10px 12px;border:2px solid var(--line);border-radius:14px;background:var(--bg)}
+.beat b{display:block;font-size:15px;overflow-wrap:anywhere}
+.beat small{display:block;margin-top:2px;font-size:12px;color:var(--dim)}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.acts button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:transparent;font-size:12px;font-weight:700}
+.acts .go{background:var(--accent);border-color:var(--accent);color:var(--on)}
+.acts .danger{background:var(--rec);border-color:var(--rec);color:#fff}
+.empty,.note{margin:0;font-size:12.5px;line-height:1.45;color:var(--dim)}
+.importbox{display:grid;gap:8px}
+.importbox label{font-size:13px;font-weight:600}
+.importbox .pill{justify-self:start}
 @media (prefers-reduced-motion: reduce){
   .dj.spin .vinyl,.tbtn.recb[aria-pressed="true"] svg{animation:none}
   .pad{transition:none}
@@ -167,6 +205,10 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 <div class="app">
   <header class="head">
     <h1 class="brand">Beat Booth</h1>
+    <div class="pills">
+      <button type="button" class="pill solid" id="btnDemo">Demo song</button>
+      <button type="button" class="pill" id="btnBeats">My beats</button>
+    </div>
     <p class="tag">Pick a DJ. Pick a vibe. Tap the pads.</p>
   </header>
 
@@ -221,6 +263,31 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
   </div>
 
   <p class="foot">No sound? Turn off your phone&rsquo;s silent switch and turn the volume up. On a keyboard, 1-4, Q-R, A-F and Z-V play the pads and Space starts the beat.</p>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheethead">
+      <h2 id="sheetTitle">My beats</h2>
+      <button type="button" class="x" id="sheetClose" aria-label="Close My beats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="saverow">
+      <input id="beatName" type="text" maxlength="24" placeholder="Name your beat" aria-label="Beat name" autocomplete="off">
+      <button type="button" class="pill solid" id="btnSave">Save beat</button>
+    </div>
+    <p class="msg" id="sheetMsg" aria-live="polite"></p>
+    <ul class="beats" id="beatList"></ul>
+    <p class="empty" id="emptyMsg">No saved beats yet. Tap PLAY, record a loop with REC, then save it here.</p>
+    <textarea id="codeOut" readonly rows="3" hidden aria-label="Beat code to copy"></textarea>
+    <div class="importbox">
+      <label for="codeIn">Got a beat code from a friend?</label>
+      <textarea id="codeIn" rows="2" placeholder="Paste it here" autocomplete="off" spellcheck="false"></textarea>
+      <button type="button" class="pill" id="btnImport">Add beat</button>
+    </div>
+    <p class="note" id="sheetNote"></p>
+  </div>
 </div>
 
 <script>
@@ -520,7 +587,7 @@ Object.keys(VIBES).forEach(id=>{
 
 /* ---------- state ---------- */
 let dj='ary', vibeId='hiphop', vibe=VIBES.hiphop, bpm=vibe.bpm, tidy=true, backing=true;
-let playing=false, recording=false, step=0, nextT=0, timer=null;
+let playing=false, recording=false, step=0, nextT=0, timer=null, pass=0, demoOn=false;
 let stepLog=[], vis=[], layers=[], curLayer=null;
 const padEls=[], padTimers=[];
 const sd=()=>60/bpm/4;
@@ -540,20 +607,23 @@ function scheduleStep(i,t0){
   if(backing){
     vibe.by[i].forEach(e=>{ const fn=vibe.V[e.lane]; if(fn) fn(at,e.vel*.75); });
   }
-  layers.forEach(layer=>layer.forEach(ev=>{
-    if(Math.floor(ev.pos)!==i) return;
-    const te=at+(ev.pos-i)*sd();
-    if(ev.born!==undefined && te-ev.born<.25) return;
-    playPad(ev.pad,te,1); vis.push({t:te,pad:ev.pad});
-  }));
+  layers.forEach(layer=>{
+    if(layer.from&&pass<layer.from) return;
+    layer.forEach(ev=>{
+      if(Math.floor(ev.pos)!==i) return;
+      const te=at+(ev.pos-i)*sd();
+      if(ev.born!==undefined && te-ev.born<.25) return;
+      playPad(ev.pad,te,1); vis.push({t:te,pad:ev.pad});
+    });
+  });
 }
 function tick(){
   if(!ac||!playing) return;
-  while(nextT<ac.currentTime+.12){ scheduleStep(step,nextT); nextT+=sd(); step=(step+1)%32; }
+  while(nextT<ac.currentTime+.12){ scheduleStep(step,nextT); nextT+=sd(); step=(step+1)%32; if(step===0) pass++; }
 }
 function startT(){
   if(!initAudio()) return;
-  playing=true; step=0; nextT=ac.currentTime+.08; stepLog=[];
+  playing=true; step=0; pass=0; nextT=ac.currentTime+.08; stepLog=[];
   clearInterval(timer); timer=setInterval(tick,25); tick(); refresh();
 }
 function stopT(){
@@ -586,7 +656,7 @@ function undo(){
   refresh();
 }
 function clearLoop(){
-  layers=[]; curLayer=null;
+  layers=[]; curLayer=null; demoOn=false;
   if(recording){ curLayer=[]; layers.push(curLayer); }
   refresh();
 }
@@ -658,12 +728,13 @@ function refresh(){
   const filled=layers.filter(l=>l.length>0).length;
   hintEl.textContent=!playing?'Tap PLAY to start the beat, then jam on the pads.'
     :recording?'Recording! Play the pads. Tap REC again to stop.'
+    :demoOn?'Demo song playing. Tap REC to jam on top of it.'
     :filled?'Your loop is playing. Tap REC to add another layer.'
     :'Tap REC to record your own loop.';
 }
 function setVibe(id){
   vibeId=id; vibe=VIBES[id]; bpm=vibe.bpm;
-  layers=[]; curLayer=null; recording=false;
+  layers=[]; curLayer=null; recording=false; demoOn=false;
   paintPads(); renderVibes(); refresh();
 }
 function setDj(id){
@@ -683,6 +754,8 @@ $('btnBack').addEventListener('click',e=>{ backing=!backing; e.currentTarget.set
 
 const KEYS='1234qwerasdfzxcv';
 document.addEventListener('keydown',e=>{
+  if(!$('scrim').hidden){ if(e.key==='Escape') closeSheet(); return; }
+  if(e.target&&e.target.matches&&e.target.matches('input,textarea')) return;
   if(e.repeat||e.metaKey||e.ctrlKey||e.altKey) return;
   if(e.code==='Space'){ e.preventDefault(); initAudio(); if(playing) stopT(); else startT(); return; }
   const idx=KEYS.indexOf((e.key||'').toLowerCase());
@@ -702,6 +775,193 @@ function frame(){
   }
   requestAnimationFrame(frame);
 }
+/* ---------- demo songs ---------- */
+/* Each demo is three parts that join in one at a time: bass, then chords, then extras. */
+VIBES.hiphop.demo={
+  bass:[[0,8],[3,8],[6,8],[10,9],[16,10],[19,10],[22,10],[26,11]],
+  keys:[[0,12],[6,12],[16,13],[22,13]],
+  fx:[[14,6],[30,6]]};
+VIBES.soul.demo={
+  bass:[[0,8],[6,8],[10,10],[16,11],[22,11],[26,9]],
+  keys:[[0,12],[10,12],[16,13],[26,13]],
+  fx:[[2,5],[3,6],[6,5],[10,6],[14,5],[18,5],[19,6],[22,5],[27,6],[30,5]]};
+VIBES.funk.demo={
+  bass:[[0,8],[3,8],[6,9],[8,8],[10,10],[14,9],[16,8],[19,8],[22,9],[24,10],[26,8],[30,11]],
+  keys:[[2,12],[6,12],[10,13],[14,13],[18,12],[22,12],[26,14],[30,15]],
+  fx:[[4,5],[12,5],[20,5],[28,5],[15,7]]};
+VIBES.rnb.demo={
+  bass:[[0,8],[7,8],[10,9],[16,10],[23,10],[26,11]],
+  keys:[[0,12],[16,13],[24,14]],
+  fx:[[8,6],[24,6],[28,7]]};
+VIBES.house.demo={
+  bass:[[2,8],[6,8],[10,8],[14,8],[18,9],[22,9],[26,9],[30,10]],
+  keys:[[3,12],[6,12],[11,12],[14,12],[19,13],[22,13],[27,13],[30,13]],
+  fx:[[6,5],[14,5],[22,5],[30,5],[24,7]]};
+VIBES.jazz.demo={
+  bass:[[0,9],[4,10],[8,11],[12,10],[16,8],[20,10],[24,11],[28,10]],
+  keys:[[0,12],[6,12],[8,13],[14,13],[16,14],[22,14],[24,15],[30,15]],
+  fx:[[3,7],[11,7],[19,7],[27,7]]};
+
+function restartT(){
+  if(!initAudio()) return;
+  recording=false; curLayer=null;
+  if(playing){
+    step=0; pass=0; nextT=ac.currentTime+.08; stepLog=[];
+    vis=vis.filter(e=>e.pad!==undefined);
+    refresh();
+  }else startT();
+}
+function playDemo(){
+  if(!initAudio()) return;
+  layers=[];
+  [['bass',0],['keys',1],['fx',2]].forEach(p=>{
+    const a=vibe.demo[p[0]].map(e=>({pos:e[0],pad:e[1]}));
+    if(p[1]) a.from=p[1];
+    layers.push(a);
+  });
+  backing=true; $('btnBack').setAttribute('aria-pressed','true');
+  demoOn=true; restartT();
+}
+
+/* ---------- saving beats ---------- */
+const STORE_KEY='beat-booth-beats';
+let memBeats=[], storeOk=true;
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function cleanBeat(o){
+  if(!o||typeof o!=='object') throw new Error('bad');
+  const v=String(o.v); if(!VIBES[v]) throw new Error('bad');
+  let b=Math.round(Number(o.b)); if(!isFinite(b)) b=VIBES[v].bpm;
+  b=clamp(b,Math.round(VIBES[v].bpm*.7),Math.round(VIBES[v].bpm*1.3));
+  const l=(Array.isArray(o.l)?o.l:[]).slice(0,12).map(x=>{
+    const f=clamp(Math.floor(Number(x[0])||0),0,8);
+    const ev=(Array.isArray(x[1])?x[1]:[]).slice(0,400).map(e=>[clamp(Number(e[0])||0,0,31.999),clamp(Math.floor(Number(e[1])||0),0,15)]);
+    return [f,ev];
+  }).filter(x=>x[1].length);
+  return {id:typeof o.id==='string'?o.id:newId(),n:String(o.n||'My beat').slice(0,24),v:v,b:b,k:o.k===0?0:1,l:l,t:Number(o.t)||Date.now()};
+}
+function readBeats(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw!==null){
+      const a=JSON.parse(raw);
+      if(Array.isArray(a)) memBeats=a.map(x=>{ try{ return cleanBeat(x); }catch(e){ return null; } }).filter(Boolean);
+    }
+  }catch(e){ storeOk=false; }
+  return memBeats;
+}
+function writeBeats(a){
+  memBeats=a;
+  try{ localStorage.setItem(STORE_KEY,JSON.stringify(a)); }catch(e){ storeOk=false; }
+}
+function b64enc(s){ return btoa(encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,(m,p)=>String.fromCharCode(parseInt(p,16)))); }
+function b64dec(s){ return decodeURIComponent(atob(s).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
+function encodeBeat(b){ return 'BB1.'+b64enc(JSON.stringify({n:b.n,v:b.v,b:b.b,k:b.k,l:b.l})); }
+function decodeBeat(raw){
+  const s=raw.replace(/\s+/g,'');
+  if(s.indexOf('BB1.')!==0) throw new Error('bad');
+  const o=JSON.parse(b64dec(s.slice(4)));
+  delete o.id; delete o.t;
+  return cleanBeat(o);
+}
+
+const scrim=$('scrim'), beatList=$('beatList'), sheetMsg=$('sheetMsg'), nameIn=$('beatName'), codeOut=$('codeOut'), codeIn=$('codeIn');
+let lastFocus=null;
+const defaultName=()=>'My beat '+(readBeats().length+1);
+function setMsg(t){ sheetMsg.textContent=t; }
+function mkBtn(label,cls,fn){
+  const b=document.createElement('button'); b.type='button'; b.textContent=label;
+  if(cls) b.className=cls;
+  if(fn) b.addEventListener('click',fn);
+  return b;
+}
+function renderBeats(){
+  const list=readBeats();
+  beatList.replaceChildren();
+  $('emptyMsg').hidden=list.length>0;
+  list.forEach(b=>{
+    const li=document.createElement('li'); li.className='beat';
+    const top=document.createElement('div');
+    const nm=document.createElement('b'); nm.textContent=b.n;
+    const meta=document.createElement('small');
+    meta.textContent=VIBES[b.v].name+' · '+b.b+' BPM · '+b.l.length+(b.l.length===1?' layer':' layers');
+    top.append(nm,meta);
+    const acts=document.createElement('div'); acts.className='acts';
+    const del=mkBtn('Delete','',null);
+    let armed=false, to=null;
+    del.addEventListener('click',()=>{
+      if(!armed){
+        armed=true; del.textContent='Sure?'; del.classList.add('danger');
+        to=setTimeout(()=>{ armed=false; del.textContent='Delete'; del.classList.remove('danger'); },3000);
+      }else{ clearTimeout(to); removeBeat(b.id); }
+    });
+    acts.append(mkBtn('Play','go',()=>{ applyBeat(b); closeSheet(); }),mkBtn('Share','',()=>shareBeat(b)),del);
+    li.append(top,acts); beatList.append(li);
+  });
+  $('sheetNote').textContent=storeOk
+    ?'Beats are saved on this device. Use Share to send one to a friend.'
+    :'This browser cannot keep saved beats. Use Share to copy a code and keep it somewhere safe.';
+}
+function openSheet(){
+  lastFocus=document.activeElement;
+  renderBeats(); setMsg(''); codeOut.hidden=true;
+  if(!nameIn.value) nameIn.value=defaultName();
+  scrim.hidden=false; $('sheetClose').focus();
+}
+function closeSheet(){
+  scrim.hidden=true; codeOut.hidden=true;
+  if(lastFocus&&lastFocus.focus) lastFocus.focus();
+}
+function saveBeat(){
+  const filled=layers.filter(l=>l.length);
+  if(!filled.length){ setMsg('Record a loop first. Tap PLAY, then REC, and play the pads. Or try the Demo song.'); return; }
+  const list=readBeats();
+  if(list.length>=24){ setMsg('You have 24 beats. Delete one to make room.'); return; }
+  const beat={
+    id:newId(),n:(nameIn.value.trim()||defaultName()).slice(0,24),v:vibeId,b:bpm,k:backing?1:0,t:Date.now(),
+    l:filled.map(l=>[l.from||0,l.map(e=>[Math.round(e.pos*1000)/1000,e.pad])])
+  };
+  writeBeats(list.concat([beat]));
+  renderBeats(); nameIn.value=defaultName(); setMsg('Saved! Your beat is in the list.');
+}
+function removeBeat(id){
+  writeBeats(readBeats().filter(x=>x.id!==id)); renderBeats(); setMsg('Deleted.');
+}
+function showCode(code){
+  codeOut.hidden=false; codeOut.value=code; codeOut.focus(); codeOut.select();
+  setMsg('Copy this code and send it to a friend.');
+}
+function shareBeat(b){
+  const code=encodeBeat(b);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>setMsg('Code copied. Paste it into a text or message.')).catch(()=>showCode(code));
+  }else showCode(code);
+}
+function importBeat(){
+  if(!codeIn.value.trim()){ setMsg('Paste a beat code first.'); return; }
+  try{
+    const b=decodeBeat(codeIn.value), list=readBeats();
+    if(list.length>=24){ setMsg('You have 24 beats. Delete one to make room.'); return; }
+    writeBeats(list.concat([b])); codeIn.value='';
+    renderBeats(); setMsg('Added "'+b.n+'". Tap Play to hear it.');
+  }catch(e){ setMsg('That code did not work. Check that you copied all of it.'); }
+}
+function applyBeat(b){
+  dj=DJS.ary.vibes.indexOf(b.v)>=0?'ary':'cali';
+  document.documentElement.dataset.dj=dj;
+  vibeId=b.v; vibe=VIBES[b.v]; bpm=b.b; backing=b.k!==0;
+  $('btnBack').setAttribute('aria-pressed',String(backing));
+  layers=b.l.map(x=>{ const a=x[1].map(e=>({pos:e[0],pad:e[1]})); if(x[0]) a.from=x[0]; return a; });
+  demoOn=false; paintPads(); renderVibes(); restartT(); refresh();
+}
+
+$('btnDemo').addEventListener('click',playDemo);
+$('btnBeats').addEventListener('click',openSheet);
+$('sheetClose').addEventListener('click',closeSheet);
+$('btnSave').addEventListener('click',saveBeat);
+$('btnImport').addEventListener('click',importBeat);
+scrim.addEventListener('click',e=>{ if(e.target===scrim) closeSheet(); });
+nameIn.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveBeat(); } });
+
 setDj('ary');
 requestAnimationFrame(frame);
 })();
